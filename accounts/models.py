@@ -7,8 +7,7 @@ from django.db.models import (EmailField, CharField)
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
-    def create_user(self, email, password=None, name=None, full_name=None,
-                    is_active=True, is_staff=None, is_superuser=None):
+    def create_user(self, email, password=None, name=None, is_active=True, is_staff=None, is_superuser=None):
         """
         Create and save a user with the given username, email, and password.
         """
