@@ -1,44 +1,47 @@
-from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-from django.db.models import (EmailField, CharField)
+from django.db.models import CharField, EmailField
 
 
 class UserManager(BaseUserManager):
+    """Define a model manager for User model with no username field."""
+
     use_in_migrations = True
 
-    def create_user(self, email, password=None, name=None, is_active=True, is_staff=None, is_superuser=None):
-        """
-        Create and save a user with the given username, email, and password.
-        """
+    def _create_user(self, email, password, **extra_fields):
+        """Create and save a User with the given email and password."""
         if not email:
-            raise ValueError('Пользователь должен иметь и-мэйл адрес')
-        if not password:
-            raise ValueError('Пользователь должен ввести пароль')
+            raise ValueError('The given email must be set')
         email = self.normalize_email(email)
-        user = self.model(email=email, name=name)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
-        user.is_staff = is_staff
-        user.is_superuser = is_superuser
-        user.is_active = is_active
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, name=None):
-        user = self.create_user(email, name=name, password=password,
-                                is_staff=True, is_superuser=True)
-        return user
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular User with the given email and password."""
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(email, password, **extra_fields)
 
-    def create_staffuser(self, email, password=None, name=None):
-        user = self.create_user(email, name=name, password=password,
-                                is_staff=True, is_superuser=False)
-        return user
+    def create_superuser(self, email, password, **extra_fields):
+        """Create and save a SuperUser with the given email and password."""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
 
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self._create_user(email, password, **extra_fields)
 
 class User(AbstractUser):
-    name = CharField(max_length=255, blank=True, null=True)
+    username = None
+    name = CharField(max_length=255)
+    phone = CharField(max_length=11)
     email = EmailField(unique=True, max_length=255)
-    photo = models.ImageField("Фото", upload_to="photo")
+    photo = models.ImageField("Фото", upload_to="photo", blank=True, null=True)
 
 
     USERNAME_FIELD = 'email'
